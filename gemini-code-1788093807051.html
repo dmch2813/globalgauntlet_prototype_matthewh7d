@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Gauntlet 1v1 — Geography Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #090d16; color: #fff; font-family: monospace; overflow: hidden; user-select: none; }
+        #debugLog { font-size: 11px; max-height: 60px; overflow-y: auto; }
+        
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-inner.flipped { transform: rotateY(180deg); }
+
+        @keyframes pulseSign {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pulseSign 0.3s ease-out forwards; }
+
+        @keyframes starGlow {
+            0% { transform: scale(0.3) rotate(-30deg); opacity: 0; }
+            50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .animate-star { animation: starGlow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center relative">
+
+    <!-- CHARACTER / COMPOSITION SELECT LOBBY -->
+    <div id="charSelect" class="absolute inset-0 bg-slate-950 z-50 flex flex-col justify-between items-center p-6 overflow-y-auto">
+        
+        <div class="w-full max-w-4xl flex justify-between items-center border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-3 bg-slate-900 border-2 border-amber-400 px-4 py-2 rounded-xl shadow-2xl">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl">⭐</span>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-amber-300 font-bold leading-none">TOTAL STARS</span>
+                        <span id="lobbyTotalStarsCount" class="font-black text-amber-400 text-xl leading-none">0</span>
+                    </div>
+                </div>
+                <!-- LEVEL CIRCLE BADGE -->
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-400 text-slate-950 font-black text-sm border-2 border-amber-200 shadow-md ml-1" id="lobbyLevelCircle" title="Player Level">
+                    1
+                </div>
+                <!-- LEVEL PROGRESS BAR -->
+                <div class="flex flex-col w-24 ml-2">
+                    <div class="flex justify-between text-[8px] font-bold text-amber-300 mb-0.5">
+                        <span>NEXT LVL</span>
+                        <span id="lobbyProgressText">0/15</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-amber-500/30">
+                        <div id="lobbyProgressBar" class="bg-amber-400 h-full w-0% transition-all"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <h1 class="text-2xl md:text-3xl font-black text-amber-400 tracking-wider">THE GLOBAL GAUNTLET 1v1</h1>
+                <p class="text-slate-400 text-xs">CHOOSE A COMPOSITION CARD TO START PLAYING</p>
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl my-auto py-4">
+            <div class="text-center font-bold text-cyan-400 text-sm mb-4 tracking-widest uppercase">
+                🎴 PICK YOUR RUN'SHERO LINEUP SEQUENCE
+            </div>
+            <div id="cardsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full min-h-[260px]"></div>
+        </div>
+
+        <div class="w-full max-w-4xl border-t border-slate-800 pt-3">
+            <div class="text-center text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest">CHARACTER BASE STATS & STAR BUFFS</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="p-2.5 bg-slate-900 border border-pink-500/50 rounded-lg text-center flex flex-col justify-between">
+                    <div>
+                        <div class="text-xl mb-1">🏃</div>
+                        <div class="font-bold text-pink-400 text-xs">Speedster</div>
+                        <div class="text-[10px] text-slate-300 font-bold mt-1">SPD: 5 | DMG: 155</div>
+                        <div class="text-[10px] text-emerald-400 font-bold">SAFE HP: 1750</div>
+                    </div>
+                    <div class="text-[9px] text-amber-300 bg-slate-950/80 rounded p-1 mt-2 border border-amber-500/30">
+                        ⭐ +200 HP / 4s (16s)
+                    </div>
+                </div>
+
+                <div class="p-2.5 bg-slate-900 border border-cyan-500/50 rounded-lg text-center flex flex-col justify-between">
+                    <div>
+                        <div class="text-xl mb-1">🏹</div>
+                        <div class="font-bold text-cyan-400 text-xs">Archer</div>
+                        <div class="text-[10px] text-slate-300 font-bold mt-1">SPD: 4 | DMG: 2x75 (150)</div>
+                        <div class="text-[10px] text-emerald-400 font-bold">SAFE HP: 2000</div>
+                    </div>
+                    <div class="text-[9px] text-amber-300 bg-slate-950/80 rounded p-1 mt-2 border border-amber-500/30">
+                        ⭐ +15 DMG (15s)
+                    </div>
+                </div>
+
+                <div class="p-2.5 bg-slate-900 border border-amber-500/50 rounded-lg text-center flex flex-col justify-between">
+                    <div>
+                        <div class="text-xl mb-1">🤖</div>
+                        <div class="font-bold text-amber-400 text-xs">Mecha</div>
+                        <div class="text-[10px] text-slate-300 font-bold mt-1">SPD: 3 | DMG: 145</div>
+                        <div class="text-[10px] text-emerald-400 font-bold">SAFE HP: 2300</div>
+                    </div>
+                    <div class="text-[9px] text-amber-300 bg-slate-950/80 rounded p-1 mt-2 border border-amber-500/30">
+                        ⭐ +15 DMG (15s)
+                    </div>
+                </div>
+
+                <div class="p-2.5 bg-slate-900 border border-purple-500/50 rounded-lg text-center flex flex-col justify-between">
+                    <div>
+                        <div class="text-xl mb-1">🛡️</div>
+                        <div class="font-bold text-purple-400 text-xs">Safe Shielder</div>
+                        <div class="text-[10px] text-slate-300 font-bold mt-1">SPD: 3 | DMG: 125</div>
+                        <div class="text-[10px] text-emerald-400 font-bold">SAFE HP: 2600</div>
+                    </div>
+                    <div class="text-[9px] text-amber-300 bg-slate-950/80 rounded p-1 mt-2 border border-amber-500/30">
+                        ⭐ +200 HP / 4s (16s)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IN-GAME HUD HEADER -->
+    <header class="w-full bg-slate-900 border-b border-slate-800 p-3 z-10 flex justify-between items-center text-xs">
+        <div class="w-2/5 flex items-center space-x-3">
+            <div class="flex items-center space-x-3 bg-slate-950 border-2 border-amber-400 px-3 py-1.5 rounded-lg shadow-lg shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">⭐</span>
+                    <div class="flex flex-col">
+                        <span class="text-[9px] text-amber-300 font-bold leading-none">TOTAL STARS</span>
+                        <span id="hudTotalStarsCount" class="font-black text-amber-400 text-base leading-none">0</span>
+                    </div>
+                </div>
+                <!-- HUD LEVEL CIRCLE BADGE -->
+                <div class="flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-slate-950 font-black text-xs border-2 border-amber-200 shadow ml-1" id="hudLevelCircle" title="Player Level">
+                    1
+                </div>
+                <!-- HUD LEVEL PROGRESS BAR -->
+                <div class="flex flex-col w-20 ml-1.5">
+                    <div class="flex justify-between text-[8px] font-bold text-amber-300 mb-0.5">
+                        <span>NEXT</span>
+                        <span id="hudProgressText">0/15</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden border border-amber-500/30">
+                        <div id="hudProgressBar" class="bg-amber-400 h-full w-0% transition-all"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full">
+                <div class="flex justify-between font-bold text-pink-400 mb-1">
+                    <span id="playerHeroLabel">YOU (HOME SAFE)</span>
+                    <span id="playerVaultHpText">1750 / 1750 HP</span>
+                </div>
+                <div class="w-full bg-slate-800 h-3 rounded overflow-hidden">
+                    <div id="playerVaultBar" class="bg-pink-500 h-full w-full transition-all"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center font-bold px-2">
+            <div id="currentLevelName" class="text-amber-400 text-sm">LEVEL 1: CAPITALS CHAMBER</div>
+            <div id="heroLineupTracker" class="text-[10px] text-slate-400">HERO 1 OF 4 ACTIVE</div>
+        </div>
+
+        <div class="w-2/5 text-right">
+            <div class="flex justify-between font-bold text-cyan-400 mb-1">
+                <span id="aiVaultHpText">2000 / 2000 HP</span>
+                <span id="enemyLabelText">NPC RIVAL (ENEMY SAFE)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-3 rounded overflow-hidden">
+                <div id="aiVaultBar" class="bg-cyan-500 h-full w-full transition-all ml-auto"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- GAMEPLAY CANVAS VIEWPORT -->
+    <main class="relative flex-1 w-full bg-slate-950 overflow-hidden flex justify-center items-center">
+        <canvas id="gameCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+
+        <div id="praiseBanner" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none hidden">
+            <div id="praiseText" class="px-8 py-4 bg-emerald-500/90 border-2 border-emerald-300 text-white font-black text-2xl rounded-xl shadow-2xl tracking-widest text-center animate-pop">
+                CORRECT!
+            </div>
+        </div>
+
+        <div id="wrongBanner" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none hidden">
+            <div class="px-8 py-4 bg-rose-600/95 border-2 border-rose-300 text-white font-black text-3xl rounded-xl shadow-2xl tracking-widest text-center animate-pop flex flex-col items-center">
+                <span>TRY AGAIN</span>
+                <span id="cooldownText" class="text-xs font-bold text-rose-200 mt-1">COOLDOWN: 2.0s</span>
+            </div>
+        </div>
+
+        <div id="triviaPanel" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-2xl bg-slate-900/95 border border-cyan-500 rounded-lg p-5 hidden shadow-2xl">
+            <div id="questionCategory" class="text-xs text-cyan-400 font-bold mb-1">CAPITALS CHAMBER</div>
+            <div id="questionText" class="text-base font-bold mb-4">Loading Question...</div>
+            <div id="optionsGrid" class="grid grid-cols-2 gap-3 text-xs"></div>
+        </div>
+
+        <div id="outsideMsg" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 bg-amber-950/90 border border-amber-500 text-amber-200 px-6 py-2.5 rounded-full text-xs font-bold shadow-lg">
+            🏃 RUN UP THE TRACK TO THE RIVAL SAFE CIRCLE TO ATTACK!
+        </div>
+    </main>
+
+    <!-- END OF RUN REWARDS OVERLAY -->
+    <div id="rewardsOverlay" class="absolute inset-0 bg-slate-950/95 z-50 flex flex-col justify-center items-center p-6 hidden">
+        <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center">
+            <h2 class="text-xs font-bold text-amber-400 tracking-widest uppercase mb-1">RUN COMPLETED!</h2>
+            <h1 class="text-2xl font-black text-white mb-6">GAUNTLET REWARDS</h1>
+
+            <div id="starsDisplay" class="flex justify-center items-center space-x-3 mb-6 min-h-[60px]"></div>
+
+            <div class="w-full bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-2 text-xs mb-6">
+                <div class="flex justify-between text-slate-400">
+                    <span>ACCURACY:</span>
+                    <span id="statAccuracy" class="font-bold text-white">100%</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>SAFE HP REMAINING:</span>
+                    <span id="statHpRemaining" class="font-bold text-white">1750 / 1750</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>EARNED RATING:</span>
+                    <span id="statRatingText" class="font-bold text-amber-400">PERFECT RUN</span>
+                </div>
+            </div>
+
+            <button id="claimRewardsBtn" onclick="finishRewardsModal()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-pink-500 text-white font-extrabold rounded-lg shadow-lg hover:brightness-110 transition-all text-sm tracking-wider">
+                CLAIM STARS & RESTART ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- LEVEL COMPLETE MODAL -->
+    <div id="levelCompleteModal" class="absolute inset-0 bg-slate-950/90 z-50 flex flex-col justify-center items-center p-6 hidden">
+        <div class="bg-slate-900 border border-amber-500 rounded p-6 max-w-md w-full text-center">
+            <h2 id="modalTitle" class="text-2xl font-bold text-amber-400 mb-2">LEVEL CLEARED!</h2>
+            <p id="modalDesc" class="text-slate-300 text-sm mb-6">You successfully destroyed the enemy safe!</p>
+            <button id="nextLevelBtn" onclick="advanceToNextLevel()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-cyan-500 text-white font-bold rounded">
+                NEXT LEVEL ➔
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER TELEMETRY -->
+    <footer class="w-full bg-slate-950 border-t border-slate-800 p-2 z-10">
+        <div class="text-[10px] text-amber-400 font-bold mb-1">PROTOTYPE DEBUG TELEMETRY:</div>
+        <div id="debugLog" class="text-slate-400 space-y-0.5"></div>
+    </footer>
+
+    <script>
+        // Hero Statistics[cite: 1]
+        const CHARS = {
+            'Speedster': { emoji: '🏃', speed: 5, dmg: 155, safeHp: 1750, buffType: 'heal', color: 'text-pink-400' },
+            'Archer': { emoji: '🏹', speed: 4, dmg: 150, safeHp: 2000, buffType: 'dmg', color: 'text-cyan-400' },
+            'Mecha': { emoji: '🤖', speed: 3, dmg: 145, safeHp: 2300, buffType: 'dmg', color: 'text-amber-400' },
+            'Safe Shielder': { emoji: '🛡️', speed: 3, dmg: 125, safeHp: 2600, buffType: 'heal', color: 'text-purple-400' }
+        };
+
+        const PRAISES = ["CORRECT!", "WONDERFUL!", "MAGNIFICENT!"];
+
+        const CAPITALS_BANK = [
+            { q: "What is the capital city of Japan?", opts: ["Kyoto", "Tokyo", "Osaka", "Hiroshima"], correct: 1 },
+            { q: "What is the capital city of France?", opts: ["Lyon", "Marseille", "Paris", "Nice"], correct: 2 },
+            { q: "What is the capital city of Australia?", opts: ["Sydney", "Melbourne", "Canberra", "Brisbane"], correct: 2 },
+            { q: "What is the capital city of Canada?", opts: ["Toronto", "Ottawa", "Vancouver", "Montreal"], correct: 1 },
+            { q: "What is the capital city of Brazil?", opts: ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"], correct: 2 },
+            { q: "What is the capital city of Egypt?", opts: ["Alexandria", "Giza", "Cairo", "Luxor"], correct: 2 },
+            { q: "What is the capital city of Germany?", opts: ["Munich", "Frankfurt", "Berlin", "Hamburg"], correct: 2 },
+            { q: "What is the capital city of South Korea?", opts: ["Seoul", "Busan", "Incheon", "Daegu"], correct: 0 },
+            { q: "What is the capital city of Argentina?", opts: ["Buenos Aires", "Córdoba", "Rosario", "Mendoza"], correct: 0 },
+            { q: "What is the capital city of Kenya?", opts: ["Mombasa", "Nairobi", "Kisumu", "Nakuru"], correct: 1 },
+            { q: "What is the capital city of Italy?", opts: ["Milan", "Venice", "Florence", "Rome"], correct: 3 },
+            { q: "What is the capital city of Thailand?", opts: ["Chiang Mai", "Bangkok", "Phuket", "Pattaya"], correct: 1 },
+            { q: "What is the capital city of Spain?", opts: ["Barcelona", "Seville", "Madrid", "Valencia"], correct: 2 },
+            { q: "What is the capital city of India?", opts: ["Mumbai", "New Delhi", "Kolkata", "Bengaluru"], correct: 1 },
+            { q: "What is the capital city of Turkey?", opts: ["Istanbul", "Ankara", "Izmir", "Antalya"], correct: 1 }
+        ];
+
+        const FLAGS_BANK = [
+            { q: "Which country features a red maple leaf on its national flag?", opts: ["Canada", "Norway", "Peru", "Austria"], correct: 0 },
+            { q: "Which flag has a yellow diamond containing a blue globe?", opts: ["Argentina", "Brazil", "Colombia", "Jamaica"], correct: 1 },
+            { q: "Which flag features a solid red sun on a white background?", opts: ["South Korea", "China", "Japan", "Vietnam"], correct: 2 },
+            { q: "Which is the only non-quadrilateral national flag?", opts: ["Nepal", "Bhutan", "Sri Lanka", "Maldives"], correct: 0 },
+            { q: "Which flag features a black, red, and gold horizontal tricolor?", opts: ["Belgium", "Germany", "Netherlands", "Austria"], correct: 1 },
+            { q: "Which star pattern is featured on Australia's flag?", opts: ["Orion", "Big Dipper", "Southern Cross", "Cassiopeia"], correct: 2 },
+            { q: "Which African nation features an AK-47 assault rifle on its flag?", opts: ["Angola", "Mozambique", "Zimbabwe", "Uganda"], correct: 1 },
+            { q: "Which flag features five yellow stars on a red background?", opts: ["China", "Vietnam", "North Korea", "Singapore"], correct: 0 },
+            { q: "Which country features a thunder dragon holding jewels on its flag?", opts: ["Nepal", "Bhutan", "Tibet", "Myanmar"], correct: 1 },
+            { q: "What color is the circle in the center of Bangladesh's flag?", opts: ["Red", "Yellow", "White", "Blue"], correct: 0 },
+            { q: "Which country features a blue chevron on red & white stripes?", opts: ["Czech Republic", "Poland", "Indonesia", "Slovakia"], correct: 0 },
+            { q: "Which South American flag features a 'Sun of May' with a face?", opts: ["Chile", "Peru", "Uruguay", "Venezuela"], correct: 2 },
+            { q: "Which flag has horizontal bands of white (top) and red (bottom)?", opts: ["Monaco", "Poland", "Indonesia", "Austria"], correct: 1 },
+            { q: "Which nation has a cedar tree prominently displayed on its flag?", opts: ["Lebanon", "Cyprus", "Jordan", "Syria"], correct: 0 },
+            { q: "What central symbol is featured on Mexico's flag?", opts: ["Crown", "Eagle on a cactus eating a snake", "Sun", "Lion"], correct: 1 }
+        ];
+
+        const LANDMARKS_BANK = [
+            { q: "In which country is Machu Picchu located?", opts: ["Colombia", "Peru", "Chile", "Bolivia"], correct: 1 },
+            { q: "The Colosseum is located in which city?", opts: ["Athens", "Rome", "Istanbul", "Cairo"], correct: 1 },
+            { q: "The Great Pyramid of Giza was built on which river?", opts: ["Amazon", "Nile", "Tigris", "Danube"], correct: 1 },
+            { q: "In which country can you visit the ancient rock city of Petra?", opts: ["Israel", "Egypt", "Jordan", "Saudi Arabia"], correct: 2 },
+            { q: "The Taj Mahal is located in which Indian city?", opts: ["Delhi", "Agra", "Jaipur", "Varanasi"], correct: 1 },
+            { q: "Carthage ruins are on which continent?", opts: ["Europe", "Asia", "Africa", "South America"], correct: 2 },
+            { q: "What Roman wall guarded northern England?", opts: ["Great Wall", "Hadrian's Wall", "Antonine Wall", "Berlin Wall"], correct: 1 },
+            { q: "Angkor Wat is located in which country?", opts: ["Thailand", "Cambodia", "Laos", "Vietnam"], correct: 1 },
+            { q: "Mount Rushmore is in which U.S. state?", opts: ["Montana", "Wyoming", "South Dakota", "Colorado"], correct: 2 },
+            { q: "The Parthenon sits atop an acropolis in which city?", opts: ["Athens", "Rome", "Sparta", "Alexandria"], correct: 0 },
+            { q: "Which landmark was built as the entrance for the 1889 World's Fair?", opts: ["Brandenburg Gate", "Arc de Triomphe", "Eiffel Tower", "Big Ben"], correct: 2 },
+            { q: "Transylvania is located in which country?", opts: ["Hungary", "Romania", "Bulgaria", "Serbia"], correct: 1 },
+            { q: "Stonehenge is located in which country?", opts: ["Ireland", "Scotland", "England", "Wales"], correct: 2 },
+            { q: "Chichen Itza is on which peninsula?", opts: ["Baja", "Yucatán Peninsula", "Florida", "Iberian"], correct: 1 },
+            { q: "Mont-Saint-Michel is off the coast of which nation?", opts: ["United Kingdom", "France", "Spain", "Netherlands"], correct: 1 }
+        ];
+
+        const GLOBAL_GAUNTLET_BANK = [
+            ...CAPITALS_BANK,
+            ...FLAGS_BANK,
+            ...LANDMARKS_BANK
+        ];
+
+        const LEVELS = [
+            { name: "LEVEL 1: CAPITALS CHAMBER", questions: CAPITALS_BANK },
+            { name: "LEVEL 2: FLAGS FIELD", questions: FLAGS_BANK },
+            { name: "LEVEL 3: HISTORY & LANDMARKS", questions: LANDMARKS_BANK },
+            { name: "LEVEL 4: THE GLOBAL GAUNTLET (FINAL)", questions: GLOBAL_GAUNTLET_BANK }
+        ];
+
+        let canvas, ctx;
+        let selectedComposition = [];
+        let npcComposition = []; 
+        let pChar = 'Speedster';
+        let currentLevelIdx = 0;
+        let activeQuestionsPool = [];
+        let currentQ = null;
+        let correctCount = 0;
+        let wrongCount = 0;
+        
+        // Load total stars from LocalStorage to persist across refreshes
+        let totalStars = parseInt(localStorage.getItem('gauntlet_total_stars') || '0', 10);
+        
+        let pendingStarsEarned = 0;
+        let keys = {};
+        let starBuffInterval = null;
+        let isQuestionCooldown = false;
+
+        let dmgBuffTimer = 0; 
+        let healBuffTimer = 0; 
+
+        const TRACK = { height: 2000 };
+
+        let game = {
+            running: false,
+            maxPVaultHp: 1750,
+            pVaultHp: 1750,
+            maxAiVaultHp: 2000,
+            aiVaultHp: 2000,
+            player: { x: 0, y: 1900, currentSpeed: 5, insideCircle: false, cooldown: 0 },
+            ais: [],
+            vaults: { 
+                player: { x: 0, y: 1900, r: 100 }, 
+                ai: { x: 0, y: 100, r: 100 },
+                center: { x: 0, y: 1000, r: 85 } // Neutral Center Vault
+            },
+            starBuffs: [],
+            cameraY: 0
+        };
+
+        function calculatePlayerLevelData(stars) {
+            let lvl = 1;
+            let currentStars = stars;
+            let starsNeeded = 15;
+            while (lvl < 30) {
+                let bracket = Math.floor((lvl - 1) / 10) + 1;
+                starsNeeded = bracket * 15;
+                if (currentStars >= starsNeeded) {
+                    currentStars -= starsNeeded;
+                    lvl++;
+                } else {
+                    break;
+                }
+            }
+            return {
+                level: Math.min(30, lvl),
+                currentStarsInLvl: currentStars,
+                starsNeeded: starsNeeded
+            };
+        }
+
+        function shuffleArray(arr) {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function shuffleQuestionOptions(qObj) {
+            const indexedOpts = qObj.opts.map((opt, i) => ({ opt, isCorrect: i === qObj.correct }));
+            const shuffledOpts = shuffleArray(indexedOpts);
+            return {
+                q: qObj.q,
+                opts: shuffledOpts.map(o => o.opt),
+                correct: shuffledOpts.findIndex(o => o.isCorrect)
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            resize();
+            window.addEventListener('resize', resize);
+
+            window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+            window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+            updateStarsUI();
+            generateCompositionCards();
+        });
+
+        function resize() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            const centerX = canvas.width / 2;
+            if (game.vaults.player) game.vaults.player.x = centerX;
+            if (game.vaults.ai) game.vaults.ai.x = centerX;
+            if (game.vaults.center) game.vaults.center.x = centerX;
+        }
+
+        function updateStarsUI() {
+            const levelData = calculatePlayerLevelData(totalStars);
+            
+            document.getElementById('lobbyTotalStarsCount').innerText = totalStars;
+            document.getElementById('hudTotalStarsCount').innerText = totalStars;
+            document.getElementById('lobbyLevelCircle').innerText = levelData.level;
+            document.getElementById('hudLevelCircle').innerText = levelData.level;
+
+            // Level Progress Bars
+            const pct = Math.min(100, Math.round((levelData.currentStarsInLvl / levelData.starsNeeded) * 100));
+            const progTxt = `${levelData.currentStarsInLvl}/${levelData.starsNeeded}`;
+
+            document.getElementById('lobbyProgressText').innerText = progTxt;
+            document.getElementById('lobbyProgressBar').style.width = `${pct}%`;
+            document.getElementById('hudProgressText').innerText = progTxt;
+            document.getElementById('hudProgressBar').style.width = `${pct}%`;
+        }
+
+        function logDebug(msg) {
+            const log = document.getElementById('debugLog');
+            const entry = document.createElement('div');
+            entry.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function generateCompositionCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+
+            const heroesList = Object.keys(CHARS);
+
+            for (let c = 1; c <= 3; c++) {
+                const randomOrder = shuffleArray(heroesList);
+                
+                const cardOuter = document.createElement('div');
+                cardOuter.className = "perspective-1000 h-64 w-full cursor-pointer";
+                cardOuter.id = `card_outer_${c}`;
+
+                cardOuter.innerHTML = `
+                    <div id="card_inner_${c}" class="card-inner relative w-full h-full transform-style-3d shadow-xl rounded-xl">
+                        <div class="absolute inset-0 bg-slate-900 border-2 border-amber-500/60 hover:border-amber-400 rounded-xl flex flex-col justify-center items-center p-4 backface-hidden transition-colors">
+                            <div class="text-4xl mb-2">🎴</div>
+                            <div class="font-bold text-amber-400 text-base">COMPOSITION CARD #${c}</div>
+                            <div class="text-[10px] text-slate-400 mt-2 text-center">CLICK TO REVEAL & PLAY</div>
+                        </div>
+                        <div class="absolute inset-0 bg-slate-900 border-2 border-cyan-400 rounded-xl flex flex-col justify-between items-center p-3 backface-hidden rotate-y-180">
+                            <div class="text-xs font-bold text-slate-300 border-b border-slate-800 pb-1 w-full text-center">LINEUP #${c}</div>
+                            <div class="flex flex-col items-center justify-center space-y-1 my-auto text-xs font-bold">
+                                <div class="${CHARS[randomOrder[0]].color}">${CHARS[randomOrder[0]].emoji} ${randomOrder[0]}</div>
+                                <div class="text-slate-500 text-[10px]">⬇️</div>
+                                <div class="${CHARS[randomOrder[1]].color}">${CHARS[randomOrder[1]].emoji} ${randomOrder[1]}</div>
+                                <div class="text-slate-500 text-[10px]">⬇️</div>
+                                <div class="${CHARS[randomOrder[2]].color}">${CHARS[randomOrder[2]].emoji} ${randomOrder[2]}</div>
+                                <div class="text-slate-500 text-[10px]">⬇️</div>
+                                <div class="${CHARS[randomOrder[3]].color}">${CHARS[randomOrder[3]].emoji} ${randomOrder[3]}</div>
+                            </div>
+                            <div class="text-[10px] font-bold text-emerald-400">STARTING RUN...</div>
+                        </div>
+                    </div>
+                `;
+
+                cardOuter.onclick = () => selectCompositionCard(c, randomOrder);
+                container.appendChild(cardOuter);
+            }
+        }
+
+        function selectCompositionCard(cardIdx, compOrder) {
+            selectedComposition = compOrder;
+            npcComposition = shuffleArray(Object.keys(CHARS));
+            logDebug(`🎭 Hidden NPC Run Lineup Generated: [${npcComposition.join(', ')}]`);
+
+            const innerCard = document.getElementById(`card_inner_${cardIdx}`);
+            if (innerCard) innerCard.classList.add('flipped');
+
+            for (let i = 1; i <= 3; i++) {
+                if (i !== cardIdx) {
+                    const otherCard = document.getElementById(`card_outer_${i}`);
+                    if (otherCard) otherCard.classList.add('opacity-0', 'pointer-events-none', 'transition-opacity');
+                }
+            }
+
+            setTimeout(() => {
+                document.getElementById('charSelect').classList.add('hidden');
+                currentLevelIdx = 0;
+                correctCount = 0;
+                wrongCount = 0;
+                initLevel(currentLevelIdx);
+            }, 1000);
+        }
+
+        function createNpcFromKey(name, heroKey, startX, speedMult = 1.0, dmgMult = 1.0) {
+            const heroData = CHARS[heroKey];
+            return {
+                name: `${name} (${heroKey})`,
+                emoji: heroData.emoji,
+                x: startX,
+                y: 100,
+                speed: heroData.speed * 0.7 * speedMult,
+                lastAttack: 0,
+                attackRate: 4000, 
+                dmg: Math.round(heroData.dmg * dmgMult)
+            };
+        }
+
+        function initLevel(lvlIndex) {
+            const levelData = LEVELS[lvlIndex];
+            
+            pChar = selectedComposition[lvlIndex % selectedComposition.length];
+            const pStat = CHARS[pChar];
+
+            activeQuestionsPool = shuffleArray(levelData.questions.map(q => shuffleQuestionOptions(q)));
+
+            game.running = true;
+            game.maxPVaultHp = pStat.safeHp;
+            game.pVaultHp = pStat.safeHp;
+            
+            const primaryNpcHero = npcComposition[lvlIndex % npcComposition.length];
+            const secondaryNpcHero = npcComposition[(lvlIndex + 1) % npcComposition.length];
+
+            const centerX = canvas.width / 2;
+
+            game.player.x = centerX - 30;
+            game.player.y = 1900;
+            game.player.currentSpeed = pStat.speed;
+            game.player.cooldown = 0;
+
+            dmgBuffTimer = 0;
+            healBuffTimer = 0;
+
+            if (lvlIndex === 3) {
+                game.maxAiVaultHp = 2500;
+                game.aiVaultHp = 2500;
+                game.ais = [
+                    createNpcFromKey('Rival Alpha', primaryNpcHero, centerX - 120, 0.6, 0.6),
+                    createNpcFromKey('Rival Beta', secondaryNpcHero, centerX + 120, 0.6, 0.6)
+                ];
+                document.getElementById('enemyLabelText').innerText = "DUAL RIVALS (ENEMY SAFE)";
+            } else {
+                const npcStat1 = CHARS[primaryNpcHero];
+                game.maxAiVaultHp = npcStat1.safeHp;
+                game.aiVaultHp = npcStat1.safeHp;
+                game.ais = [
+                    createNpcFromKey('Rival NPC', primaryNpcHero, centerX + 30, 1.0, 1.0)
+                ];
+                document.getElementById('enemyLabelText').innerText = "NPC RIVAL (ENEMY SAFE)";
+            }
+
+            game.vaults.player = { x: centerX, y: 1900, r: 100 };
+            game.vaults.ai = { x: centerX, y: 100, r: 100 };
+            game.vaults.center = { x: centerX, y: 1000, r: 85 };
+
+            spawnCenterStarBuffs();
+
+            if (starBuffInterval) clearInterval(starBuffInterval);
+            starBuffInterval = setInterval(() => {
+                spawnCenterStarBuffs();
+                logDebug("⭐ Star Buffs refreshed in center lane!");
+            }, 10000);
+
+            document.getElementById('currentLevelName').innerText = levelData.name;
+            document.getElementById('heroLineupTracker').innerText = `HERO ${lvlIndex + 1} OF 4 ACTIVE: ${pChar.toUpperCase()}`;
+            document.getElementById('playerHeroLabel').innerText = `${pStat.emoji} YOU [${pChar.toUpperCase()}]`;
+
+            logDebug(`--- STARTED ${levelData.name} WITH HERO: ${pChar} (${pStat.safeHp} SAFE HP) ---`);
+
+            nextQuestion();
+            requestAnimationFrame(loop);
+        }
+
+        function spawnCenterStarBuffs() {
+            const centerX = canvas.width / 2;
+            game.starBuffs = [
+                { x: centerX, y: 940, active: true },
+                { x: centerX, y: 1060, active: true }
+            ];
+        }
+
+        function loop() {
+            if (!game.running) return;
+            update();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        function update() {
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+
+            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+
+            const pStat = CHARS[pChar];
+            game.player.currentSpeed = pStat.speed;
+
+            game.player.x += dx * game.player.currentSpeed;
+            game.player.y += dy * game.player.currentSpeed;
+
+            const centerX = canvas.width / 2;
+            game.player.x = Math.max(centerX - 580, Math.min(centerX + 580, game.player.x));
+            game.player.y = Math.max(50, Math.min(1950, game.player.y));
+
+            game.cameraY = game.player.y - canvas.height / 2;
+            game.cameraY = Math.max(0, Math.min(TRACK.height - canvas.height, game.cameraY));
+
+            const playerVault = game.vaults.player;
+            const now = Date.now();
+
+            game.ais.forEach(ai => {
+                const distToPlayerVault = Math.hypot(playerVault.x - ai.x, playerVault.y - ai.y);
+                if (distToPlayerVault > playerVault.r - 20) {
+                    ai.y += ai.speed;
+                } else {
+                    if (now - ai.lastAttack >= ai.attackRate) {
+                        game.pVaultHp = Math.max(0, game.pVaultHp - ai.dmg);
+                        ai.lastAttack = now;
+                        logDebug(`⚔️ ${ai.name} attacked Home Safe! (-${ai.dmg} HP)`);
+                    }
+                }
+            });
+
+            // Star buff pickups
+            game.starBuffs.forEach(star => {
+                if (star.active && Math.hypot(game.player.x - star.x, game.player.y - star.y) < 35) {
+                    star.active = false;
+                    const bType = pStat.buffType;
+                    if (bType === 'heal') {
+                        healBuffTimer = 16;
+                        logDebug(`⭐ Picked up Star Buff! Granted Regenerative Heal over 16s.`);
+                    } else {
+                        dmgBuffTimer = 15;
+                        logDebug(`⭐ Picked up Star Buff! Granted +15 DMG Buff for 15s.`);
+                    }
+                }
+            });
+
+            // Handle circle trigger inside rival safe
+            const aiVault = game.vaults.ai;
+            const distToAiVault = Math.hypot(aiVault.x - game.player.x, aiVault.y - game.player.y);
+            const inside = distToAiVault <= aiVault.r;
+
+            const triviaPanel = document.getElementById('triviaPanel');
+            const outsideMsg = document.getElementById('outsideMsg');
+
+            if (inside) {
+                if (!game.player.insideCircle) {
+                    game.player.insideCircle = true;
+                    triviaPanel.classList.remove('hidden');
+                    outsideMsg.classList.add('hidden');
+                }
+            } else {
+                if (game.player.insideCircle) {
+                    game.player.insideCircle = false;
+                    triviaPanel.classList.add('hidden');
+                    outsideMsg.classList.remove('hidden');
+                }
+            }
+
+            const pPct = Math.max(0, (game.pVaultHp / game.maxPVaultHp) * 100);
+            document.getElementById('playerVaultBar').style.width = `${pPct}%`;
+            document.getElementById('playerVaultHpText').innerText = `${Math.ceil(game.pVaultHp)} / ${game.maxPVaultHp} HP`;
+
+            const aiPct = Math.max(0, (game.aiVaultHp / game.maxAiVaultHp) * 100);
+            document.getElementById('aiVaultBar').style.width = `${aiPct}%`;
+            document.getElementById('aiVaultHpText').innerText = `${Math.ceil(game.aiVaultHp)} / ${game.maxAiVaultHp} HP`;
+
+            if (game.aiVaultHp <= 0) {
+                game.running = false;
+                if (starBuffInterval) clearInterval(starBuffInterval);
+                if (currentLevelIdx < LEVELS.length - 1) {
+                    document.getElementById('modalTitle').innerText = "LEVEL CLEARED!";
+                    document.getElementById('modalDesc').innerText = `You destroyed the Rival Safe! Prepare for Level ${currentLevelIdx + 2}.`;
+                    document.getElementById('levelCompleteModal').classList.remove('hidden');
+                } else {
+                    showRewardsModal();
+                }
+            } else if (game.pVaultHp <= 0) {
+                game.running = false;
+                if (starBuffInterval) clearInterval(starBuffInterval);
+                document.getElementById('modalTitle').innerText = "SAFE DESTROYED!";
+                document.getElementById('modalDesc').innerText = "Your safe was breached by the rivals. Try again!";
+                document.getElementById('nextLevelBtn').innerText = "RESTART RUN ➔";
+                document.getElementById('nextLevelBtn').onclick = () => location.reload();
+                document.getElementById('levelCompleteModal').classList.remove('hidden');
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(0, -game.cameraY);
+
+            const centerX = canvas.width / 2;
+
+            // Draw track background
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(centerX - 600, 0, 1200, TRACK.height);
+
+            // Side track borders
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(centerX - 600, 0); ctx.lineTo(centerX - 600, TRACK.height);
+            ctx.moveTo(centerX + 600, 0); ctx.lineTo(centerX + 600, TRACK.height);
+            ctx.stroke();
+
+            // 3 VERTICAL DASHED LANE LINES
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            
+            ctx.moveTo(centerX - 200, 0); 
+            ctx.lineTo(centerX - 200, TRACK.height);
+            
+            ctx.moveTo(centerX, 0); 
+            ctx.lineTo(centerX, TRACK.height);
+            
+            ctx.moveTo(centerX + 200, 0); 
+            ctx.lineTo(centerX + 200, TRACK.height);
+            
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Vault Circles (Home Safe)
+            const pV = game.vaults.player;
+            ctx.fillStyle = 'rgba(236, 72, 153, 0.15)';
+            ctx.strokeStyle = '#ec4899';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(pV.x, pV.y, pV.r, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#ec4899';
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('HOME SAFE', pV.x, pV.y + 120);
+
+            // Draw Rival Safe Circle + VAULT IN CENTER OF ATTACK CIRCLE
+            const aiV = game.vaults.ai;
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(aiV.x, aiV.y, aiV.r, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+            
+            // Vault Icon inside Attacking Circle
+            ctx.fillStyle = '#22d3ee';
+            ctx.font = '34px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏛️', aiV.x, aiV.y - 10);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillText('ATTACK VAULT', aiV.x, aiV.y + 25);
+            ctx.fillText('RIVAL SAFE (ATTACK ZONE)', aiV.x, aiV.y - 110);
+
+            // DRAW CENTRAL VAULT & CIRCLE (Middle Circle Vault)
+            const cV = game.vaults.center;
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cV.x, cV.y, cV.r, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+            
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏛️', cV.x, cV.y);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('CENTRAL VAULT', cV.x, cV.y + 40);
+
+            // Draw Star Buffs along the center line
+            game.starBuffs.forEach(star => {
+                if (star.active) {
+                    ctx.font = '28px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⭐', star.x, star.y);
+                }
+            });
+
+            // Draw AI Rivals
+            game.ais.forEach(ai => {
+                ctx.font = '32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(ai.emoji, ai.x, ai.y);
+
+                ctx.fillStyle = '#f87171';
+                ctx.font = 'bold 10px monospace';
+                ctx.fillText(ai.name, ai.x, ai.y - 25);
+            });
+
+            // Draw Player
+            const pStat = CHARS[pChar];
+            ctx.font = '36px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pStat.emoji, game.player.x, game.player.y);
+
+            ctx.fillStyle = '#4ade80';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText(`YOU (${pChar})`, game.player.x, game.player.y - 28);
+
+            ctx.restore();
+        }
+
+        function nextQuestion() {
+            if (activeQuestionsPool.length === 0) {
+                const lvl = LEVELS[currentLevelIdx];
+                activeQuestionsPool = shuffleArray(lvl.questions.map(q => shuffleQuestionOptions(q)));
+            }
+            currentQ = activeQuestionsPool.pop();
+
+            document.getElementById('questionCategory').innerText = LEVELS[currentLevelIdx].name;
+            document.getElementById('questionText').innerText = currentQ.q;
+
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = '';
+
+            currentQ.opts.forEach((optText, i) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left font-bold text-white transition-colors flex items-center justify-between ${isQuestionCooldown ? 'opacity-50 cursor-not-allowed' : ''}`;
+                btn.disabled = isQuestionCooldown;
+                btn.innerHTML = `<span>${optText}</span><span class="text-slate-500 text-[10px]">[${i + 1}]</span>`;
+                btn.onclick = () => answerQuestion(i);
+                grid.appendChild(btn);
+            });
+        }
+
+        function answerQuestion(idx) {
+            if (!currentQ || !game.running || isQuestionCooldown) return;
+
+            if (idx === currentQ.correct) {
+                correctCount++;
+                let bonusDmg = (dmgBuffTimer > 0) ? 15 : 0;
+                let finalDmg = CHARS[pChar].dmg + bonusDmg;
+
+                game.aiVaultHp = Math.max(0, game.aiVaultHp - finalDmg);
+                logDebug(`🎯 Correct Answer! Dealt ${finalDmg} DMG to Rival Safe.`);
+
+                showPraiseBanner();
+                nextQuestion();
+            } else {
+                wrongCount++;
+                logDebug(`❌ Incorrect Answer! Triggering 2-second cooldown.`);
+                triggerIncorrectCooldown();
+            }
+        }
+
+        function triggerIncorrectCooldown() {
+            isQuestionCooldown = true;
+
+            const buttons = document.querySelectorAll('#optionsGrid button');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+            const banner = document.getElementById('wrongBanner');
+            const cdText = document.getElementById('cooldownText');
+            banner.classList.remove('hidden');
+
+            let remainingTime = 2.0;
+            cdText.innerText = `COOLDOWN: ${remainingTime.toFixed(1)}s`;
+
+            const timerInterval = setInterval(() => {
+                remainingTime -= 0.1;
+                if (remainingTime > 0) {
+                    cdText.innerText = `COOLDOWN: ${remainingTime.toFixed(1)}s`;
+                } else {
+                    clearInterval(timerInterval);
+                }
+            }, 100);
+
+            setTimeout(() => {
+                banner.classList.add('hidden');
+                isQuestionCooldown = false;
+                nextQuestion();
+            }, 2000);
+        }
+
+        function showPraiseBanner() {
+            const banner = document.getElementById('praiseBanner');
+            const txt = document.getElementById('praiseText');
+            txt.innerText = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 700);
+        }
+
+        function showWrongBanner() {
+            const banner = document.getElementById('wrongBanner');
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 700);
+        }
+
+        function advanceToNextLevel() {
+            document.getElementById('levelCompleteModal').classList.add('hidden');
+            currentLevelIdx++;
+            initLevel(currentLevelIdx);
+        }
+
+        function showRewardsModal() {
+            const overlay = document.getElementById('rewardsOverlay');
+            overlay.classList.remove('hidden');
+
+            const total = correctCount + wrongCount;
+            const accuracy = total > 0 ? Math.round((correctCount / total) * 100) : 100;
+            
+            let starsEarned = 1;
+            if (accuracy >= 80) starsEarned = 2;
+            if (accuracy >= 95 && game.pVaultHp > (game.maxPVaultHp * 0.5)) starsEarned = 3;
+
+            pendingStarsEarned = starsEarned;
+
+            const starsContainer = document.getElementById('starsDisplay');
+            starsContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const starSpan = document.createElement('span');
+                starSpan.className = `text-4xl ${i < starsEarned ? 'text-amber-400 animate-star' : 'text-slate-700'}`;
+                starSpan.innerText = '⭐';
+                starsContainer.appendChild(starSpan);
+            }
+
+            document.getElementById('statAccuracy').innerText = `${accuracy}% (${correctCount}/${total})`;
+            document.getElementById('statHpRemaining').innerText = `${Math.ceil(game.pVaultHp)} / ${game.maxPVaultHp}`;
+            
+            let ratingStr = "GOOD RUN";
+            if (starsEarned === 2) ratingStr = "GREAT RUN!";
+            if (starsEarned === 3) ratingStr = "PERFECT RUN! 🏆";
+            document.getElementById('statRatingText').innerText = ratingStr;
+        }
+
+        function finishRewardsModal() {
+            totalStars += pendingStarsEarned;
+            // Save to LocalStorage so star count persists across browser refreshes
+            localStorage.setItem('gauntlet_total_stars', totalStars.toString());
+            
+            updateStarsUI();
+            document.getElementById('rewardsOverlay').classList.add('hidden');
+            document.getElementById('charSelect').classList.remove('hidden');
+            generateCompositionCards();
+        }
+    </script>
+</body>
+</html>
